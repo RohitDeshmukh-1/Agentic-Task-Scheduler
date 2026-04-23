@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TaskPilot — AI-Powered WhatsApp Task Scheduler Dashboard">
+    <title>TaskPilot — Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- ─── Animated Background ──────────────────────────────────── -->
+    <div class="bg-grid"></div>
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+    <div class="bg-glow bg-glow-3"></div>
+
+    <!-- ─── Navigation ───────────────────────────────────────────── -->
+    <nav class="nav" id="main-nav">
+        <div class="nav-brand">
+            <div class="nav-logo">
+                <svg viewBox="0 0 32 32" fill="none"><path d="M16 2L28 8v16l-12 6L4 24V8l12-6z" fill="url(#g1)" opacity="0.9"/><path d="M16 10l6 3v8l-6 3-6-3v-8l6-3z" fill="url(#g2)"/><defs><linearGradient id="g1" x1="4" y1="2" x2="28" y2="30"><stop stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient><linearGradient id="g2" x1="10" y1="10" x2="22" y2="24"><stop stop-color="#818cf8"/><stop offset="1" stop-color="#c084fc"/></linearGradient></defs></svg>
+            </div>
+            <span class="nav-title">TaskPilot</span>
+            <span class="nav-badge">AI</span>
+        </div>
+        <div class="nav-links">
+            <button class="nav-link active" data-view="dashboard" id="nav-dashboard">Dashboard</button>
+            <button class="nav-link" data-view="chat" id="nav-chat">Chat Console</button>
+            <button class="nav-link" data-view="tasks" id="nav-tasks">Tasks</button>
+        </div>
+        <div class="nav-status">
+            <div class="status-dot"></div>
+            <span>System Online</span>
+        </div>
+    </nav>
+
+    <!-- ─── Main Content ─────────────────────────────────────────── -->
+    <main class="main">
+
+        <!-- ═══ Dashboard View ═══ -->
+        <section class="view active" id="view-dashboard">
+            <!-- Hero Stats -->
+            <div class="hero-stats">
+                <div class="stat-card stat-primary" id="stat-streak">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="streak-value">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                    <div class="stat-ring">
+                        <svg viewBox="0 0 36 36"><circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="2"/><circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#streak-grad)" stroke-width="2" stroke-dasharray="0 100" stroke-linecap="round" class="stat-ring-fill" id="streak-ring"/><defs><linearGradient id="streak-grad"><stop stop-color="#f97316"/><stop offset="1" stop-color="#ef4444"/></linearGradient></defs></svg>
+                    </div>
+                </div>
+                <div class="stat-card stat-xp" id="stat-xp">
+                    <div class="stat-icon">💎</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="xp-value">0</div>
+                        <div class="stat-label">Total XP</div>
+                    </div>
+                    <div class="stat-badge" id="level-badge">Lv. 1</div>
+                </div>
+                <div class="stat-card stat-tasks" id="stat-tasks">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="tasks-today-value">0/0</div>
+                        <div class="stat-label">Today's Tasks</div>
+                    </div>
+                    <div class="stat-progress">
+                        <div class="stat-progress-fill" id="tasks-progress"></div>
+                    </div>
+                </div>
+                <div class="stat-card stat-rate" id="stat-rate">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="rate-value">0%</div>
+                        <div class="stat-label">Weekly Rate</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="charts-row">
+                <div class="card chart-card" id="weekly-chart-card">
+                    <div class="card-header">
+                        <h3>Weekly Performance</h3>
+                        <div class="card-actions">
+                            <button class="btn-ghost" id="btn-refresh-chart">↻ Refresh</button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="weekly-chart"></div>
+                </div>
+                <div class="card activity-card" id="activity-card">
+                    <div class="card-header">
+                        <h3>Recent Activity</h3>
+                    </div>
+                    <div class="activity-feed" id="activity-feed">
+                        <div class="activity-empty">
+                            <div class="activity-empty-icon">🚀</div>
+                            <p>Start chatting to see activity here!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Today's Tasks -->
+            <div class="card" id="todays-tasks-card">
+                <div class="card-header">
+                    <h3>📋 Today's Mission</h3>
+                    <div class="card-actions">
+                        <button class="btn-primary btn-sm" id="btn-add-task" onclick="showView('chat')">+ Add via Chat</button>
+                    </div>
+                </div>
+                <div class="task-list" id="today-task-list">
+                    <div class="task-empty">
+                        <div class="task-empty-icon">✨</div>
+                        <p>No tasks yet. Send a message to get started!</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Chat View ═══ -->
+        <section class="view" id="view-chat">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="chat-avatar">🤖</div>
+                    <div class="chat-info">
+                        <h3>TaskPilot AI</h3>
+                        <span class="chat-status">Online — Powered by Llama 3.3</span>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="message message-bot">
+                        <div class="message-avatar">🤖</div>
+                        <div class="message-bubble">
+                            <p>Hey there! 👋 I'm TaskPilot, your AI task manager.</p>
+                            <p>Try saying things like:</p>
+                            <ul>
+                                <li>"Remind me to call the bank tomorrow"</li>
+                                <li>"Plan my week for the Python project"</li>
+                                <li>"What do I have today?"</li>
+                                <li>"help" for all commands</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-input-container">
+                    <div class="chat-input-wrap">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Type a message..." autocomplete="off">
+                        <button class="chat-send" id="chat-send">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                        </button>
+                    </div>
+                    <div class="chat-suggestions">
+                        <button class="suggestion" onclick="sendMessage('What do I have today?')">📋 Today's tasks</button>
+                        <button class="suggestion" onclick="sendMessage('How is my streak?')">🔥 Check streak</button>
+                        <button class="suggestion" onclick="sendMessage('help')">❓ Help</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ Tasks View ═══ -->
+        <section class="view" id="view-tasks">
+            <div class="tasks-header">
+                <h2>Task Manager</h2>
+                <div class="tasks-filters">
+                    <select id="task-filter-status" class="filter-select">
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="missed">Missed</option>
+                        <option value="rescheduled">Rescheduled</option>
+                    </select>
+                    <input type="date" id="task-filter-date" class="filter-date">
+                </div>
+            </div>
+            <div class="tasks-grid" id="tasks-grid">
+                <div class="task-empty">
+                    <div class="task-empty-icon">📝</div>
+                    <p>No tasks found. Chat with TaskPilot to create some!</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

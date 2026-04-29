@@ -47,7 +47,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         description=(
-            "🚀 TaskPilot — AI-Powered WhatsApp Task Scheduler. "
+            "🚀 TaskPilot — AI-Powered Task Scheduler for Telegram & WhatsApp. "
             "Manage tasks, build streaks, and get intelligent insights."
         ),
         version="1.0.0",
@@ -59,7 +59,7 @@ def create_app() -> FastAPI:
     # CORS
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins + ["*"],
+        allow_origins=settings.cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -10,15 +10,17 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.graph import process_message
+from app.crud.conversation import ConversationCRUD, MemoryLogCRUD
 from app.crud.daily_log import DailyLogCRUD
 from app.crud.goal import GoalCRUD
 from app.crud.task import TaskCRUD
 from app.crud.user import UserCRUD
+from app.models.conversation import ConversationIntent
 from app.models.task import TaskCategory, TaskDifficulty, TaskPriority, TaskStatus
 from app.schemas.goal import GoalCreate
 from app.schemas.task import TaskCreate
 from app.services.message_formatter import MessageFormatter
-from app.services.whatsapp import get_whatsapp_service
+from app.services.telegram import get_telegram_service
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -30,17 +32,17 @@ class OrchestrationService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.whatsapp = get_whatsapp_service()
+        self.telegram = get_telegram_service()
 
-    async def handle_incoming_message(self, phone: str, message: str) -> str:
+    async def handle_incoming_message(self, user_id: str, message: str) -> str:
         """Full pipeline: receive message → agent → persist → respond."""
 
-        # 1. Get or create user
-        user, is_new = await UserCRUD.get_or_create(self.db, phone)
+        # 1. Get or create user (user_id is chat_id for Telegram)
+        user, is_new = await UserCRUD.get_or_create(self.db, user_id)
         if is_new:
-            logger.info("new_user_registered", phone=phone)
+            logger.info("new_user_registered", user_id=user_id)
 
-        # 2. Build user context for agents
+        # 2. Build user context for agents (includes conversation history)
         user_context = await self._build_user_context(user)
 
         # 3. Run through LangGraph agent pipeline
@@ -48,6 +50,9 @@ class OrchestrationService:
 
         intent = result.get("current_intent", "")
         response = result.get("response", "Something went wrong. Please try again.")
+        
+        # Map intent string to enum
+        intent_enum = self._map_intent_to_enum(intent)
 
         # 4. Persist based on intent
         if intent == "scheduling":
@@ -82,10 +87,26 @@ class OrchestrationService:
                 )
                 response = formatter.goal_confirmation(goal_data)
 
-        # 5. Save conversation memory
+        # 5. Save conversation memory with intent and metadata
         from app.models.conversation import ConversationMemory
-        self.db.add(ConversationMemory(user_id=user.id, role="user", content=message))
-        self.db.add(ConversationMemory(user_id=user.id, role="assistant", content=response))
+        
+        summary = response[:100] if response else None
+        await ConversationCRUD.save_conversation(
+            self.db,
+            user_id=user.id,
+            role="user",
+            content=message,
+            intent=intent_enum,
+            summary=message[:100],
+        )
+        await ConversationCRUD.save_conversation(
+            self.db,
+            user_id=user.id,
+            role="assistant",
+            content=response,
+            intent=intent_enum,
+            summary=summary,
+        )
 
         # 6. Reset ignore counter on any interaction
         if user.consecutive_ignores > 0:
@@ -95,7 +116,7 @@ class OrchestrationService:
         await self.db.flush()
 
         # 7. Send response
-        await self.whatsapp.send_message(phone, response)
+        await self.telegram.send_message(user_id, response)
 
         return response
 
@@ -110,6 +131,17 @@ class OrchestrationService:
         recent_logs = await DailyLogCRUD.get_range(self.db, user.id, week_start, today)
         rates = [l.completion_rate for l in recent_logs] if recent_logs else [0.0]
         avg_rate = sum(rates) / len(rates)
+        
+        # Get recent conversation history for LLM context
+        conversation_history = await ConversationCRUD.get_recent_conversation(
+            self.db, user.id, limit=5
+        )
+        conversation_context = [
+            {"role": conv.role, "content": conv.content} for conv in conversation_history
+        ]
+        
+        # Get recent memory logs for planning context
+        memory_summary = await MemoryLogCRUD.get_logs_summary(self.db, user.id, days=7)
 
         return {
             "user_id": user.id,
@@ -139,6 +171,8 @@ class OrchestrationService:
                 for g in goals
             ],
             "recent_completion_rate": avg_rate,
+            "conversation_history": conversation_context,
+            "memory_logs_summary": memory_summary,
         }
 
     async def _persist_tasks(self, user_id: str, extracted: list[dict]) -> list:
@@ -204,3 +238,17 @@ class OrchestrationService:
         )
 
         return xp_earned
+
+    def _map_intent_to_enum(self, intent_str: str) -> Optional[ConversationIntent]:
+        """Map intent string to ConversationIntent enum."""
+        intent_mapping = {
+            "scheduling": ConversationIntent.SCHEDULING,
+            "status_update": ConversationIntent.STATUS_UPDATE,
+            "goal_setting": ConversationIntent.GOAL_SETTING,
+            "planning": ConversationIntent.PLANNING,
+            "analysis": ConversationIntent.ANALYSIS,
+            "logging": ConversationIntent.LOGGING,
+            "suggestion_request": ConversationIntent.SUGGESTION_REQUEST,
+            "query": ConversationIntent.QUERY,
+        }
+        return intent_mapping.get(intent_str, ConversationIntent.OTHER)

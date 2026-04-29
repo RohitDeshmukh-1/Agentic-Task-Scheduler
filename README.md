@@ -1,8 +1,8 @@
-# 🚀 TaskPilot — AI-Powered WhatsApp Task Scheduler
+# 🚀 TaskPilot — AI-Powered Telegram Task Scheduler
 
 <div align="center">
 
-**An intelligent, multi-agent task management system that helps you organize your life through WhatsApp.**
+**A production-grade, multi-agent Telegram task scheduler that turns natural language into structured plans, reminders, and weekly insights.**
 
 Built with LangGraph • Llama 3.3 70B • FastAPI • APScheduler
 
@@ -10,37 +10,46 @@ Built with LangGraph • Llama 3.3 70B • FastAPI • APScheduler
 
 ---
 
-## ✨ Features
+## Why It Stands Out
 
-| Feature | Description |
-|---------|-------------|
-| 🧠 **Natural Language Scheduling** | Just say "Remind me to call the bank tomorrow" — TaskPilot understands |
-| 🤖 **Multi-Agent AI System** | 6 specialized LangGraph agents (Router, Planner, Tracker, Analyzer, Goal Setter, Chat) |
-| ⏰ **Automated Reminders** | Morning task list at 8 AM, Night completion check at 9 PM |
-| 📊 **Weekly AI Reports** | AI-generated insights about your productivity patterns |
-| 🔥 **Streaks & Gamification** | XP, levels, streaks — stay motivated with game mechanics |
-| 🎯 **Goal Tracking** | Set long-term goals, break them into daily tasks |
-| 📱 **WhatsApp Integration** | Works via Meta Cloud API or Console mode for development |
-| 🌐 **Premium Dashboard** | Stunning web dashboard for visual task management |
-| 🔄 **Smart Rescheduling** | Missed tasks auto-reschedule without overloading your day |
-| 😴 **Dormant Mode** | Bot backs off if you're unresponsive — no spam! |
+- **Multi-agent architecture**: Router, Planner, Tracker, Analyzer, Goal Setter, and Chat agents coordinate to interpret intent and act.
+- **Natural-language first**: Users speak in plain English; tasks, goals, and updates are structured automatically.
+- **Operationally mature**: Async DB, cron-based scheduling, health checks, and production-ready webhook handling.
+- **Behavior-aware**: Streaks, XP, dormant mode, and weekly reports keep engagement high without spamming.
 
-## 🏗️ Architecture
+---
+
+## Highlights
+
+| Capability | What it delivers |
+|-----------|------------------|
+| 🧠 **Natural Language Scheduling** | “Remind me to call the bank tomorrow” becomes a task with date + priority |
+| 🤖 **Multi-Agent Orchestration** | Six specialized agents collaborate on parsing, planning, and tracking |
+| ⏰ **Automated Reminders** | Morning and night check-ins, plus weekly productivity reports |
+| 🔄 **Smart Rescheduling** | Missed tasks re-planned without overloading your day |
+| 🔥 **Gamification** | Streaks, XP, and levels drive consistency |
+| 📱 **Telegram-Ready** | Webhook/polling modes with robust callback handling |
+
+---
+
+## Architecture
 
 ```
-User ──→ WhatsApp ──→ Webhook ──→ LangGraph Pipeline ──→ Database
-                                       │
-                          ┌─────────────┼─────────────┐
-                          ▼             ▼             ▼
-                       Router →  Planner/Tracker → Response
-                                       │
-                                  APScheduler
-                              (Morning/Night/Weekly)
+User → Telegram → Webhook → LangGraph Pipeline → Database
+                                  │
+                      ┌───────────┼───────────┐
+                      ▼           ▼           ▼
+                   Router → Planner/Tracker → Response
+                                  │
+                            APScheduler
+                     (Morning / Night / Weekly)
 ```
 
-## 🚀 Quick Start
+---
 
-### 1. Clone & Setup
+## Quick Start (Run via TeleBot)
+
+### 1) Install
 
 ```bash
 cd "task reminder bot"
@@ -50,85 +59,155 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2) Configure
 
-Edit `.env` with your Groq API key (already configured):
+Create `.env`:
 
 ```env
 LLM_API_KEY=gsk_your_groq_key
 LLM_MODEL=llama-3.3-70b-versatile
-WHATSAPP_MODE=console
+
+TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+TELEGRAM_MODE=webhook
+TELEGRAM_WEBHOOK_SECRET=taskpilot_telegram_2026
 ```
 
-### 3. Run the Server
+### 3) Run
 
 ```bash
-# HTTP server with dashboard
 python run.py server
-
-# Interactive console chat
-python run.py console
 ```
 
-### 4. Access
+### 4) Use the TeleBot
 
-- **Dashboard**: http://localhost:8000/dashboard
-- **API Docs**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/api/v1/health
+- Open Telegram and search for your bot
+- Send `/start`
+- Try: “Add a task to call John tomorrow at 10am”
 
-## 📁 Project Structure
+---
+
+## Production Webhook Setup
+
+```bash
+curl -X POST https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://your-domain.com/api/v1/webhook/telegram"}'
+
+curl https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo
+```
+
+---
+
+## Project Structure
 
 ```
 ├── app/
 │   ├── agents/          # LangGraph multi-agent system
-│   │   ├── graph.py     # Main orchestrator
-│   │   ├── router_agent.py
-│   │   ├── planner_agent.py
-│   │   ├── tracker_agent.py
-│   │   └── analyzer_agent.py
 │   ├── api/             # FastAPI endpoints
-│   │   └── endpoints/
 │   ├── core/            # Database, logging
 │   ├── crud/            # Data access layer
 │   ├── models/          # SQLAlchemy ORM models
 │   ├── schemas/         # Pydantic validation
-│   ├── services/        # Business logic
-│   │   ├── orchestrator.py
-│   │   ├── scheduler.py
-│   │   ├── whatsapp.py
-│   │   └── message_formatter.py
+│   ├── services/        # Orchestration, scheduler, Telegram
 │   └── main.py          # FastAPI app factory
-├── dashboard/           # Premium web dashboard
+├── dashboard/           # Web dashboard
 ├── tests/               # Test suite
 ├── run.py               # CLI entry point
 ├── Dockerfile
 └── docker-compose.yml
 ```
 
-## 🧪 Testing
+---
+
+## Testing
 
 ```bash
 pytest tests/ -v --cov=app
 ```
 
-## 🐳 Docker Deployment
+---
+
+## Docker
 
 ```bash
 docker-compose up -d
 ```
 
-## 📱 WhatsApp Setup (Production)
+---
 
-1. Create a Meta Developer App at https://developers.facebook.com
-2. Enable WhatsApp Business API
-3. Set webhook URL to `https://your-domain/api/v1/webhook/whatsapp`
-4. Update `.env` with your credentials:
-   ```env
-   WHATSAPP_MODE=meta_cloud
-   WHATSAPP_PHONE_NUMBER_ID=your_id
-   WHATSAPP_ACCESS_TOKEN=your_token
-   WHATSAPP_VERIFY_TOKEN=your_verify_token
-   ```
+## Live Endpoints
+
+- Dashboard: http://localhost:8000/dashboard
+- API Docs: http://localhost:8000/docs
+- Health: http://localhost:8000/api/v1/health
+
+```bash
+# No external API needed — test in terminal
+python run.py console
+```
+
+### Development Webhook (Without SSL)
+
+```bash
+# Test webhook locally with dev endpoint
+curl -X POST http://localhost:8000/api/v1/webhook/console \
+  -H "Content-Type: application/json" \
+  -d '{"user_id":"123","message":"Add a task tomorrow"}'
+```
+
+### Telegram Polling (Alternative to Webhook)
+
+If webhook setup is difficult, use polling mode:
+
+```env
+TELEGRAM_MODE=polling
+```
+
+Then start the bot:
+```bash
+python run.py server
+```
+
+---
+
+## 🐳 Docker Deployment with Telegram
+
+```bash
+# 1. Update .env with your Telegram bot token
+TELEGRAM_BOT_TOKEN=YOUR_TOKEN
+MESSAGING_PLATFORM=telegram
+
+# 2. Deploy
+docker-compose up -d
+
+# 3. Configure webhook (inside container)
+docker exec taskpilot curl -X POST https://api.telegram.org/botYOUR_TOKEN/setWebhook \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://your-domain.com/api/v1/webhook/telegram"}'
+
+# 4. Check logs
+docker logs -f taskpilot
+```
+
+---
+
+## 📄 Telegram Features
+
+### Supported Commands
+- `/start` — Welcome message
+- `/help` — Show available commands
+- `/tasks` — List all tasks
+- `/add` — Add a new task
+- `/goals` — View goals
+
+### Message Format
+Messages support:
+- ✅ Bold text: `**text**`
+- 📌 Inline buttons for quick actions
+- 🔗 Links: `[text](url)`
+- 📊 Code blocks for reports
+
+---
 
 ## 📄 License
 

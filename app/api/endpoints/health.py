@@ -6,16 +6,20 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
+from app.core.database import get_db
 
 router = APIRouter(tags=["System"])
 settings = get_settings()
 
 
 @router.get("/health")
-async def health_check():
+async def health_check(db: AsyncSession = Depends(get_db)):
+    await db.execute(text("SELECT 1"))
     return {
         "status": "healthy",
         "app": settings.app_name,
@@ -30,7 +34,9 @@ async def public_config():
     """Non-sensitive configuration for the dashboard."""
     return {
         "app_name": settings.app_name,
-        "whatsapp_mode": settings.whatsapp_mode,
+        "messaging_platform": "telegram",
+        "telegram_mode": settings.telegram_mode,
+        "database_is_sqlite": settings.is_sqlite,
         "scheduler": {
             "morning_reminder": f"{settings.morning_reminder_hour:02d}:{settings.morning_reminder_minute:02d}",
             "night_check": f"{settings.night_check_hour:02d}:{settings.night_check_minute:02d}",

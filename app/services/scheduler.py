@@ -15,7 +15,7 @@ from app.crud.daily_log import DailyLogCRUD
 from app.crud.task import TaskCRUD
 from app.crud.user import UserCRUD
 from app.services.message_formatter import MessageFormatter
-from app.services.whatsapp import get_whatsapp_service
+from app.services.telegram import get_telegram_service
 
 logger = get_logger(__name__)
 settings = get_settings()
@@ -27,8 +27,8 @@ scheduler = AsyncIOScheduler()
 async def morning_reminder_job():
     """Send morning task list to all active users."""
     logger.info("job_started", job="morning_reminder")
-    whatsapp = get_whatsapp_service()
-
+    telegram = get_telegram_service()
+    
     async with async_session_factory() as db:
         users = await UserCRUD.list_active(db)
         today = date.today()
@@ -37,7 +37,7 @@ async def morning_reminder_job():
             if user.dormant_mode:
                 # Send re-engagement instead
                 msg = formatter.dormant_reengagement(user.display_name)
-                await whatsapp.send_message(user.phone_number, msg)
+                await telegram.send_message(user.phone_number, msg)
                 continue
 
             tasks = await TaskCRUD.get_tasks_for_date(db, user.id, today)
@@ -57,7 +57,7 @@ async def morning_reminder_job():
             msg = formatter.morning_reminder(
                 task_dicts, user.current_streak, user.level, user.total_xp
             )
-            await whatsapp.send_message(user.phone_number, msg)
+            await telegram.send_message(user.phone_number, msg)
 
         await db.commit()
     logger.info("job_completed", job="morning_reminder")
@@ -66,7 +66,7 @@ async def morning_reminder_job():
 async def night_check_job():
     """Send evening completion check to all active users."""
     logger.info("job_started", job="night_check")
-    whatsapp = get_whatsapp_service()
+    telegram = get_telegram_service()
 
     async with async_session_factory() as db:
         users = await UserCRUD.list_active(db)
@@ -86,7 +86,7 @@ async def night_check_job():
             ]
 
             msg = formatter.night_check(task_dicts, user.display_name)
-            await whatsapp.send_message(user.phone_number, msg)
+            await telegram.send_message(user.phone_number, msg)
 
             # Track if user ignores (will be reset when they respond)
             await UserCRUD.increment_ignore(db, user)
@@ -98,7 +98,7 @@ async def night_check_job():
 async def weekly_report_job():
     """Generate and send weekly reports every Sunday."""
     logger.info("job_started", job="weekly_report")
-    whatsapp = get_whatsapp_service()
+    telegram = get_telegram_service()
 
     async with async_session_factory() as db:
         users = await UserCRUD.list_active(db)
@@ -142,7 +142,7 @@ async def weekly_report_job():
             msg = formatter.weekly_report(report, {
                 "current_streak": user.current_streak,
             })
-            await whatsapp.send_message(user.phone_number, msg)
+            await telegram.send_message(user.phone_number, msg)
 
         await db.commit()
     logger.info("job_completed", job="weekly_report")

@@ -33,12 +33,10 @@ class Settings(BaseSettings):
     # ── Database ─────────────────────────────────────────────────────────
     database_url: str = "sqlite+aiosqlite:///./taskbot.db"
 
-    # ── WhatsApp ─────────────────────────────────────────────────────────
-    whatsapp_mode: Literal["console", "meta_cloud"] = "console"
-    whatsapp_phone_number_id: str = ""
-    whatsapp_access_token: str = ""
-    whatsapp_verify_token: str = "taskpilot_verify_2026"
-    whatsapp_webhook_secret: str = ""
+    # ── Telegram ─────────────────────────────────────────────────────────
+    telegram_bot_token: str = ""
+    telegram_webhook_secret: str = "taskpilot_telegram_2026"
+    telegram_mode: Literal["polling", "webhook"] = "webhook"
 
     # ── Application ──────────────────────────────────────────────────────
     app_name: str = "TaskPilot"

@@ -22,7 +22,8 @@ def run_server():
     console.print(Panel(
         f"[bold green]🚀 {settings.app_name} v1.0.0[/bold green]\n"
         f"Environment: {settings.app_env}\n"
-        f"WhatsApp Mode: {settings.whatsapp_mode}\n"
+        f"Telegram Mode: {settings.telegram_mode}\n"
+        f"Database: {settings.database_url}\n"
         f"Dashboard: http://localhost:{settings.app_port}/dashboard\n"
         f"API Docs: http://localhost:{settings.app_port}/docs",
         title="TaskPilot Server",
@@ -55,7 +56,7 @@ async def run_console():
         border_style="cyan",
     ))
 
-    phone = "+919999999999"
+    chat_id = "999999999"
 
     while True:
         try:
@@ -66,8 +67,9 @@ async def run_console():
 
             async with async_session_factory() as db:
                 service = OrchestrationService(db)
-                response = await service.handle_incoming_message(phone, message)
+                response = await service.handle_incoming_message(chat_id, message)
                 await db.commit()
+                console.print(Panel(response, title="TaskPilot Reply", border_style="green"))
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Interrupted. Goodbye![/yellow]")

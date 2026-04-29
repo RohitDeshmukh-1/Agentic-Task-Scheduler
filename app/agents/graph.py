@@ -55,7 +55,7 @@ async def query_node(state: GraphState) -> GraphState:
     ctx = state.get("user_context", {})
     today_tasks = ctx.get("pending_tasks_today", [])
     tasks_str = "\n".join(
-        f"{i}. {'✅' if t.get('status') == 'completed' else '⏳'} {t['description']}"
+        f"{i}. {'✅' if t.get('status') == 'completed' else '⏳'} {t.get('description', 'Untitled task')}"
         for i, t in enumerate(today_tasks, 1)
     ) or "No tasks today"
 

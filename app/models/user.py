@@ -48,6 +48,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     conversations = relationship(
         "ConversationMemory", back_populates="user", cascade="all, delete-orphan"
     )
+    memory_logs = relationship(
+        "MemoryLog", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<User {self.phone_number} streak={self.current_streak}>"

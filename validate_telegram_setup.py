@@ -6,7 +6,12 @@ Verifies that all components are correctly configured for Telegram integration
 
 import sys
 import os
+import io
 from pathlib import Path
+
+# Fix for Windows console emoji encoding issues
+if sys.platform == 'win32' and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Colors for terminal output
 GREEN = "\033[92m"
@@ -66,7 +71,6 @@ def check_env_file():
     # Check required keys
     required_keys = [
         "TELEGRAM_BOT_TOKEN",
-        "MESSAGING_PLATFORM",
         "LLM_API_KEY",
     ]
     
@@ -87,11 +91,6 @@ def check_env_file():
         all_found = False
     elif "TELEGRAM_BOT_TOKEN=" in env_content:
         print_success("TELEGRAM_BOT_TOKEN has a value")
-    
-    if "MESSAGING_PLATFORM=telegram" in env_content:
-        print_success("MESSAGING_PLATFORM set to 'telegram'")
-    else:
-        print_warning("MESSAGING_PLATFORM might not be set to 'telegram'")
     
     return all_found
 
@@ -200,29 +199,6 @@ def check_telegram_token():
         return False
 
 
-def check_messaging_platform():
-    """Verify MESSAGING_PLATFORM is set correctly"""
-    print_header("7. Messaging Platform Configuration")
-    
-    try:
-        from app.config import get_settings
-        settings = get_settings()
-        
-        platform = settings.messaging_platform
-        print_success(f"MESSAGING_PLATFORM = '{platform}'")
-        
-        if platform == "telegram":
-            print_success("Platform correctly set to Telegram")
-            return True
-        else:
-            print_warning(f"Platform is '{platform}' (expected 'telegram')")
-            return True  # Don't fail, just warn
-    
-    except Exception as e:
-        print_error(f"Platform check failed: {e}")
-        return False
-
-
 def check_webhook_endpoints():
     """Verify webhook endpoints are registered"""
     print_header("8. Webhook Endpoints Check")
@@ -258,7 +234,6 @@ def main():
         ("Project Structure", check_project_structure),
         ("Module Imports", check_imports),
         ("Telegram Token", check_telegram_token),
-        ("Messaging Platform", check_messaging_platform),
         ("Webhook Endpoints", check_webhook_endpoints),
     ]
     

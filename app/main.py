@@ -5,6 +5,7 @@ TaskPilot — FastAPI application factory.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+import asyncio
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +18,45 @@ from app.core.logging import get_logger, setup_logging
 from app.services.scheduler import setup_scheduler, shutdown_scheduler
 
 settings = get_settings()
+
+async def polling_task():
+    from app.services.telegram import get_telegram_service
+    from app.services.telegram_commands import process_telegram_command
+    from app.services.orchestrator import OrchestrationService
+    from app.core.database import async_session_factory
+    
+    logger = get_logger("taskpilot.polling")
+    telegram = get_telegram_service()
+    logger.info("starting_telegram_polling")
+    
+    offset = None
+    while True:
+        try:
+            updates = await telegram.get_updates(offset=offset)
+            for update in updates:
+                offset = update["update_id"] + 1
+                
+                if "message" in update:
+                    message = update["message"]
+                    chat_id = message.get("chat", {}).get("id")
+                    text = message.get("text", "")
+                    
+                    if not chat_id or not text:
+                        continue
+                        
+                    async with async_session_factory() as db:
+                        command_response = await process_telegram_command(str(chat_id), text, db)
+                        if command_response:
+                            await telegram.send_message(str(chat_id), command_response)
+                        else:
+                            service = OrchestrationService(db)
+                            await service.handle_incoming_message(str(chat_id), text)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error("polling_error", error=str(e))
+            await asyncio.sleep(5)
+        await asyncio.sleep(1)
 
 
 @asynccontextmanager
@@ -34,7 +74,14 @@ async def lifespan(app: FastAPI):
     setup_scheduler()
     logger.info("scheduler_ready")
 
+    polling_job = None
+    if settings.telegram_mode == "polling":
+        polling_job = asyncio.create_task(polling_task())
+
     yield
+
+    if polling_job:
+        polling_job.cancel()
 
     # Shutdown
     shutdown_scheduler()

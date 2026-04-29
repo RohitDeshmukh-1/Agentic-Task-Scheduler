@@ -5,6 +5,11 @@ CLI entry point — run the server or interact via console.
 import argparse
 import asyncio
 import sys
+import io
+
+if sys.platform == 'win32' and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 
 import uvicorn
 from rich.console import Console

@@ -3,7 +3,7 @@ Health check and system info endpoints.
 """
 
 from __future__ import annotations
-
+import asyncio
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
@@ -19,9 +19,17 @@ settings = get_settings()
 
 @router.get("/health")
 async def health_check(db: AsyncSession = Depends(get_db)):
-    await db.execute(text("SELECT 1"))
+    db_status = "unhealthy"
+    try:
+        # Timeout the DB check so it doesn't hang the healthcheck
+        await asyncio.wait_for(db.execute(text("SELECT 1")), timeout=3.0)
+        db_status = "healthy"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_status == "healthy" else "degraded",
+        "database": db_status,
         "app": settings.app_name,
         "version": "1.0.0",
         "environment": settings.app_env,

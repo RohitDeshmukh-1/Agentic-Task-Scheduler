@@ -75,14 +75,24 @@ async def configure_telegram_webhook(logger) -> None:
     if not webhook_url:
         base_url = settings.public_base_url.strip()
         if not base_url:
-            railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+            # Check multiple Railway-specific variables
+            railway_domain = (
+                os.getenv("RAILWAY_PUBLIC_DOMAIN") or 
+                os.getenv("RAILWAY_STATIC_URL") or 
+                ""
+            ).strip()
             if railway_domain:
-                base_url = f"https://{railway_domain}"
+                # Railway variables sometimes include https://, sometimes not
+                if not railway_domain.startswith("http"):
+                    base_url = f"https://{railway_domain}"
+                else:
+                    base_url = railway_domain
+        
         if base_url:
             webhook_url = f"{base_url.rstrip('/')}/api/v1/webhook/telegram"
 
     if not webhook_url:
-        logger.warning("telegram_webhook_url_missing")
+        logger.warning("telegram_webhook_url_missing_cannot_configure")
         return
 
     telegram = get_telegram_service()

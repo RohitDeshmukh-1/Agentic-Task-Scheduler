@@ -61,14 +61,14 @@ class TimestampMixin:
     """Mixin to add created_at and updated_at timestamps."""
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
+        DateTime(timezone=False),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         sort_order=998,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        DateTime(timezone=False),
+        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
         sort_order=999,
     )
 

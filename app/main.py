@@ -99,14 +99,23 @@ async def lifespan(app: FastAPI):
     logger.info("starting", app=settings.app_name, env=settings.app_env)
 
     # Initialize database
-    await init_db()
-    logger.info("database_ready")
+    try:
+        await asyncio.wait_for(init_db(), timeout=30.0)
+        logger.info("database_ready")
+    except Exception as e:
+        logger.error("database_init_failed_continuing", error=str(e))
 
     # Start background scheduler
-    setup_scheduler()
-    logger.info("scheduler_ready")
+    try:
+        setup_scheduler()
+        logger.info("scheduler_ready")
+    except Exception as e:
+        logger.error("scheduler_setup_failed", error=str(e))
 
-    await configure_telegram_webhook(logger)
+    try:
+        await asyncio.wait_for(configure_telegram_webhook(logger), timeout=15.0)
+    except Exception as e:
+        logger.error("webhook_config_skipped_or_failed", error=str(e))
 
     polling_job = None
     if settings.telegram_mode == "polling":

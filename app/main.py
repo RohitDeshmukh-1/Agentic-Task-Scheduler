@@ -12,6 +12,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app import models # Register models
+
 from app.api.router import api_router
 from app.config import get_settings
 from app.core.database import close_db, init_db

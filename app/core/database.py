@@ -10,10 +10,26 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import String, func, DateTime
+from sqlalchemy import String, func, DateTime, event
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
+
+
+# ── Global Timezone Normalization ──────────────────────────────────────────
+@event.listens_for(Session, "before_flush")
+def strip_tz_before_flush(session, flush_context, instances):
+    """
+    Global fail-safe: Force all datetimes to be naive before they hit the DB.
+    Postgres (via asyncpg) crashes if it receives a timezone-aware datetime
+    for a TIMESTAMP WITHOUT TIME ZONE column.
+    """
+    for obj in session.new | session.dirty:
+        for attr in obj.__mapper__.all_orm_descriptors:
+            if hasattr(attr, "type") and isinstance(attr.type, (DateTime, TIMESTAMP)):
+                val = getattr(obj, attr.key)
+                if isinstance(val, datetime) and val.tzinfo is not None:
+                    setattr(obj, attr.key, val.replace(tzinfo=None))
 
 from app.config import get_settings
 

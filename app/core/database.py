@@ -58,16 +58,18 @@ class Base(DeclarativeBase):
 
 
 class TimestampMixin:
-    """Mixin that adds created_at and updated_at columns."""
+    """Mixin to add created_at and updated_at timestamps."""
 
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc),
-        server_default=func.now(),
+        DateTime,
+        default=datetime.utcnow,
+        sort_order=998,
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc),
-        onupdate=lambda: datetime.now(timezone.utc),
-        server_default=func.now(),
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        sort_order=999,
     )
 
 

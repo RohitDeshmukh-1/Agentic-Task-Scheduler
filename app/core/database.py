@@ -20,6 +20,12 @@ from app import models  # Ensure models are registered with Base
 settings = get_settings()
 
 # ── Engine Configuration ─────────────────────────────────────────────────────
+db_url = settings.database_url
+if db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
+elif db_url.startswith("postgresql://") and "+asyncpg" not in db_url:
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 _engine_kwargs: dict = {
     "echo": False,
     "future": True,
@@ -37,7 +43,7 @@ else:
         pool_recycle=3600,
     )
 
-engine = create_async_engine(settings.database_url, **_engine_kwargs)
+engine = create_async_engine(db_url, **_engine_kwargs)
 
 async_session_factory = async_sessionmaker(
     engine,

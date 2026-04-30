@@ -59,7 +59,12 @@ class Settings(BaseSettings):
 
     # ── Dashboard ────────────────────────────────────────────────────────
     dashboard_enabled: bool = True
-    cors_origins: List[str] = ["http://localhost:3000", "http://localhost:8000"]
+    cors_origins: List[str] = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://healthcheck.railway.app",
+        "http://healthcheck.railway.app",
+    ]
 
     @field_validator("cors_origins", mode="before")
     @classmethod

@@ -5,6 +5,6 @@ dockerfilePath = "Dockerfile"
 [deploy]
 startCommand = "python run.py server"
 healthcheckPath = "/api/v1/health"
-healthcheckTimeout = 30
-restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 5
+healthcheckTimeout = 120
+restartPolicyType = "always"
+restartPolicyMaxRetries = 10

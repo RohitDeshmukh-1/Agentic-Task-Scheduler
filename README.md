@@ -6,6 +6,8 @@
 
 Built with LangGraph • Llama 3.3 70B • FastAPI • APScheduler
 
+**Demo bot:** [Get your shit done](https://t.me/Planora_taskbot)
+
 </div>
 
 ---

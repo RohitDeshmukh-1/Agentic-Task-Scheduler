@@ -22,6 +22,14 @@ logger = get_logger(__name__)
 settings = get_settings()
 
 
+def _get_groq_base_url() -> str | None:
+    """Return a Groq SDK base URL from either root or OpenAI-compatible endpoint."""
+    base_url = settings.llm_api_base.strip().rstrip("/")
+    if base_url.endswith("/openai/v1"):
+        base_url = base_url[: -len("/openai/v1")]
+    return base_url or None
+
+
 def _get_llm():
     """Create the LLM instance based on configuration."""
     return ChatGroq(
@@ -29,6 +37,9 @@ def _get_llm():
         model=settings.llm_model,
         temperature=0.3,
         max_tokens=2048,
+        base_url=_get_groq_base_url(),
+        timeout=20,
+        max_retries=1,
     )
 
 
@@ -220,6 +231,17 @@ async def process_message(user_message: str, user_context: dict) -> GraphState:
     }
 
     logger.info("processing_message", message_preview=user_message[:60])
-    result = await graph.ainvoke(initial_state)
+    try:
+        result = await graph.ainvoke(initial_state)
+    except Exception as e:
+        logger.error("agent_graph_error", error=str(e))
+        initial_state["current_intent"] = "general_chat"
+        initial_state["response"] = (
+            "I received your message, but I cannot reach the AI service right now. "
+            "Please check the LLM_API_KEY / provider settings and try again in a minute."
+        )
+        initial_state["error"] = str(e)
+        return initial_state
+
     logger.info("message_processed", intent=result.get("current_intent"))
     return result

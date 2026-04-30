@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     llm_api_key: str
     llm_model: str = "llama-3.3-70b-versatile"
     llm_provider: Literal["groq", "openai", "together"] = "groq"
+    llm_api_base: str = "https://api.groq.com/openai/v1"
 
     # ── Database ─────────────────────────────────────────────────────────
     database_url: str = "sqlite+aiosqlite:///./taskbot.db"

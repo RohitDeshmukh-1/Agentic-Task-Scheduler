@@ -29,6 +29,7 @@ async def receive_message_telegram(request: Request, db: AsyncSession = Depends(
     Telegram sends updates as JSON POST requests to this endpoint.
     Production-ready webhook implementation with command support.
     """
+    chat_id = None
     try:
         body = await request.json()
         
@@ -102,6 +103,15 @@ async def receive_message_telegram(request: Request, db: AsyncSession = Depends(
             error=str(e), 
             trace=traceback.format_exc()
         )
+        if chat_id:
+            try:
+                telegram = get_telegram_service()
+                await telegram.send_message(
+                    str(chat_id),
+                    "I received your message, but something failed while processing it. Please try again in a minute.",
+                )
+            except Exception as send_error:
+                logger.error("telegram_error_reply_failed", error=str(send_error))
         return {"status": "error", "detail": str(e)[:100]}
 
 

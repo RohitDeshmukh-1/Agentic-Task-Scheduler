@@ -26,7 +26,13 @@ def run_server():
     settings = get_settings()
 
     # Railway injects $PORT — use it if present, else fall back to settings
-    port = int(os.environ.get("PORT", settings.app_port))
+    raw_port = os.environ.get("PORT", settings.app_port)
+    try:
+        port = int(raw_port)
+    except (ValueError, TypeError):
+        logger = get_logger("run")
+        logger.warning("invalid_port_env_falling_back", raw_port=raw_port, fallback=settings.app_port)
+        port = int(settings.app_port)
 
     console.print(Panel(
         f"[bold green]🚀 {settings.app_name} v1.0.0[/bold green]\n"

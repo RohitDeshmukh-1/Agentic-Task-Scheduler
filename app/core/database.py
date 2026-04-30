@@ -62,13 +62,13 @@ class TimestampMixin:
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        server_default=func.now(),
         sort_order=998,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
-        default=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
-        onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None),
+        server_default=func.now(),
+        onupdate=func.now(),
         sort_order=999,
     )
 

@@ -4,6 +4,7 @@ Telegram webhook endpoint — handles incoming messages from Telegram Bot API.
 
 from __future__ import annotations
 
+import traceback
 from fastapi import APIRouter, Depends, Request
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -96,7 +97,11 @@ async def receive_message_telegram(request: Request, db: AsyncSession = Depends(
             return {"status": "ignored"}
 
     except Exception as e:
-        logger.error("telegram_webhook_error", error=str(e), detail=str(e)[:200])
+        logger.error(
+            "telegram_webhook_error", 
+            error=str(e), 
+            trace=traceback.format_exc()
+        )
         return {"status": "error", "detail": str(e)[:100]}
 
 

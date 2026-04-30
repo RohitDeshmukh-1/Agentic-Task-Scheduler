@@ -36,15 +36,15 @@ Built with LangGraph • Llama 3.3 70B • FastAPI • APScheduler
 
 ```mermaid
 flowchart LR
-  user([User]) --> tg[Telegram]
-  tg --> api[FastAPI Webhook / Polling]
-  api --> orch[OrchestrationService]
-  orch --> graph[LangGraph Pipeline]
-  graph --> router[Router Agent]
-  router --> planner[Planner Agent]
-  router --> tracker[Tracker Agent]
-  router --> goal[Goal Setter]
-  router --> query[Query Handler]
+  user(["User"]) --> tg["Telegram"]
+  tg --> api["FastAPI Webhook / Polling"]
+  api --> orch["OrchestrationService"]
+  orch --> graph["LangGraph Pipeline"]
+  graph --> router["Router Agent"]
+  router --> planner["Planner Agent"]
+  router --> tracker["Tracker Agent"]
+  router --> goal["Goal Setter"]
+  router --> query["Query Handler"]
   planner --> db[(Database)]
   tracker --> db
   goal --> db

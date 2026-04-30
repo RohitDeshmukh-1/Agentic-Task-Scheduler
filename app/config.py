@@ -65,7 +65,32 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, v):
         if isinstance(v, str):
-            return json.loads(v)
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                return [v]
+        return v
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        """
+        Normalize database URLs.
+        - Replaces 'postgres://' with 'postgresql+asyncpg://'
+        - Ensures 'postgresql+asyncpg://' is used for postgres connections
+        - Strips any whitespace
+        """
+        if not v:
+            return v
+        
+        v = v.strip()
+        
+        # Handle standard Railway/Heroku URLs
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://") and "+asyncpg" not in v:
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            
         return v
 
     @property

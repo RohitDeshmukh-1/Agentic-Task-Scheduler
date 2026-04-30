@@ -106,6 +106,20 @@ Expected response:
 }
 ```
 
+### Railway Auto-Webhook
+
+When running on Railway, you can let the app auto-configure the webhook at startup.
+
+Set one of these variables:
+
+```env
+TELEGRAM_WEBHOOK_URL=https://your-domain.com/api/v1/webhook/telegram
+# or
+PUBLIC_BASE_URL=https://your-domain.com
+```
+
+If both are empty, the app will use `RAILWAY_PUBLIC_DOMAIN` automatically.
+
 ### Option B: Using Polling (If Webhook Won't Work)
 
 Polling is easier but less efficient:

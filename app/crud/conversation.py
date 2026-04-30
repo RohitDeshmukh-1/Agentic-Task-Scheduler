@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -57,7 +57,7 @@ class ConversationCRUD:
         db: AsyncSession, user_id: UUID, days: int = 7
     ) -> dict:
         """Get a summary of recent conversation patterns."""
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         stmt = (
             select(ConversationMemory)
@@ -206,7 +206,7 @@ class MemoryLogCRUD:
         db: AsyncSession, user_id: UUID, days: int = 7
     ) -> dict:
         """Get summary of recent memory logs and patterns."""
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
         stmt = (
             select(MemoryLog)

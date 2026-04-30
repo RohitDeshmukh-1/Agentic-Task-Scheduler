@@ -3,6 +3,7 @@
 from app.crud.user import UserCRUD
 from app.crud.goal import GoalCRUD
 from app.crud.task import TaskCRUD
+from app.crud.recurring_task import RecurringTaskCRUD
 from app.crud.daily_log import DailyLogCRUD
 
-__all__ = ["UserCRUD", "GoalCRUD", "TaskCRUD", "DailyLogCRUD"]
+__all__ = ["UserCRUD", "GoalCRUD", "TaskCRUD", "RecurringTaskCRUD", "DailyLogCRUD"]

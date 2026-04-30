@@ -4,7 +4,7 @@ Bot flow tests covering scheduling, goal creation, and reminder delivery.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -15,6 +15,7 @@ from app.crud.goal import GoalCRUD
 from app.crud.task import TaskCRUD
 from app.crud.user import UserCRUD
 from app.models.goal import Goal
+from app.models.recurring_task import RecurringTask
 from app.models.task import TaskStatus
 import app.services.orchestrator as orchestrator_module
 from app.services import scheduler as scheduler_module
@@ -69,12 +70,18 @@ async def test_orchestration_schedules_tasks(db, monkeypatch):
     user = await UserCRUD.get_by_phone(db, "123456")
     assert user is not None
     tasks = await TaskCRUD.get_tasks_for_date(db, user.id, date.today())
+    assert len(tasks) == 0
+    assert "What time" in response
+    assert fake_telegram.sent[0]["chat_id"] == "123456"
+    assert "What time" in fake_telegram.sent[0]["text"]
+
+    follow_up = await service.handle_incoming_message("123456", "6pm")
+    tasks = await TaskCRUD.get_tasks_for_date(db, user.id, date.today())
     assert len(tasks) == 1
     assert tasks[0].description == "Call the bank"
     assert tasks[0].status == TaskStatus.PENDING
-    assert "Tasks scheduled" in response
-    assert fake_telegram.sent[0]["chat_id"] == "123456"
-    assert "Tasks scheduled" in fake_telegram.sent[0]["text"]
+    assert tasks[0].scheduled_time is not None
+    assert "Tasks scheduled" in follow_up
 
 
 @pytest.mark.asyncio
@@ -162,3 +169,51 @@ async def test_morning_reminder_job_sends_task_summary(monkeypatch):
     assert sent["chat_id"] == user.phone_number
     assert "Good Morning" in sent["text"]
     assert "Pay rent" in sent["text"]
+
+
+@pytest.mark.asyncio
+async def test_orchestration_recurring_except_sunday(db, monkeypatch):
+    fake_telegram = FakeTelegram()
+
+    async def fake_process_message(message: str, user_context: dict):
+        assert "except sundays" in message.lower()
+        return {
+            "current_intent": "scheduling",
+            "extracted_tasks": [
+                {
+                    "description": "Go to the gym",
+                    "category": "health",
+                    "difficulty": "medium",
+                    "priority": "medium",
+                    "scheduled_date": date.today().isoformat(),
+                    "scheduled_time": "18:00",
+                }
+            ],
+            "response": "ignored",
+        }
+
+    monkeypatch.setattr(orchestrator_module, "process_message", fake_process_message)
+    monkeypatch.setattr(orchestrator_module, "get_telegram_service", lambda: fake_telegram)
+
+    service = orchestrator_module.OrchestrationService(db)
+    response = await service.handle_incoming_message(
+        "444444",
+        "remind me to go to the gym at 6pm everyday except Sundays",
+    )
+
+    user = await UserCRUD.get_by_phone(db, "444444")
+    assert user is not None
+
+    result = await db.execute(
+        select(RecurringTask).where(RecurringTask.user_id == user.id)
+    )
+    recurring = list(result.scalars().all())
+    assert len(recurring) == 1
+
+    start = date.today()
+    end = start + timedelta(days=6)
+    tasks = await TaskCRUD.get_tasks_in_range(db, user.id, start, end)
+    assert tasks
+    assert all(t.scheduled_date.weekday() != 6 for t in tasks)
+    assert all(t.recurring_task_id == recurring[0].id for t in tasks)
+    assert "Repeats" in response

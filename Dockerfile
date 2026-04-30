@@ -2,24 +2,27 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# System deps
+# System deps — curl needed for healthcheck on Railway
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Python deps
+# Python deps first (layer-cached)
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Application code
 COPY . .
 
-# Expose port
-EXPOSE 8000
+# Railway injects $PORT — default to 8000 locally
+ENV PORT=8000
 
-# Health check
+EXPOSE $PORT
+
+# Health check (Railway also has its own but belt-and-suspenders)
 HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/api/v1/health')" || exit 1
+    CMD curl -f http://localhost:${PORT}/api/v1/health || exit 1
 
-# Run
+# Entry point — run.py reads APP_PORT from env
 CMD ["python", "run.py", "server"]

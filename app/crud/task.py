@@ -173,6 +173,22 @@ class TaskCRUD:
         return list(result.scalars().all())
 
     @staticmethod
+    async def get_recurring_dates_in_range(
+        db: AsyncSession, recurring_task_id: str, start: date, end: date
+    ) -> set[date]:
+        result = await db.execute(
+            select(Task.scheduled_date)
+            .where(
+                and_(
+                    Task.recurring_task_id == recurring_task_id,
+                    Task.scheduled_date >= start,
+                    Task.scheduled_date <= end,
+                )
+            )
+        )
+        return {row[0] for row in result.all()}
+
+    @staticmethod
     async def get_completion_stats(db: AsyncSession, user_id: str, target_date: date) -> dict:
         """Get completion statistics for a specific date."""
         tasks = await TaskCRUD.get_tasks_for_date(db, user_id, target_date)

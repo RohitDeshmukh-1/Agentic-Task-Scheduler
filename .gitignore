@@ -7,42 +7,113 @@ __pycache__/
 dist/
 build/
 *.egg
+*.whl
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
 
 # ─── Virtual Environments ────────────────────────────────────
 .venv/
 venv/
 env/
+ENV/
+env.bak/
+venv.bak/
+.Python
 
 # ─── Environment & Secrets ───────────────────────────────────
 .env
-.env.*
+.env.local
+.env.*.local
+# Keep example files in git so contributors know what vars to set
+!.env.example
+!.env.railway.example
 *.pem
 *.key
+*.crt
+*.p12
+secrets/
 
 # ─── Database ────────────────────────────────────────────────
 *.db
 *.sqlite3
+*.sqlite
 *.db-journal
 *.db-wal
 *.db-shm
 *.sqlite3-wal
 *.sqlite3-shm
+migrations/versions/
+alembic/versions/
 
 # ─── IDE ─────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
+*~
+.project
+.pydevproject
+.settings/
+*.sublime-project
+*.sublime-workspace
 
 # ─── OS ──────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # ─── Logs ────────────────────────────────────────────────────
 logs/
 *.log
+*.log.*
+log/
 
 # ─── Testing ─────────────────────────────────────────────────
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
+.tox/
+nosetests.xml
+coverage.xml
+
+# ─── Node & Frontend ─────────────────────────────────────────
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+.next/
+out/
+
+# ─── Docker ──────────────────────────────────────────────────
+.dockerignore
+docker-compose.override.yml
+
+# ─── Temporary & Backup ──────────────────────────────────────
+*.tmp
+*.bak
+*.swp
+*.swo
+*~
+.cache/
+tmp/
+temp/
+
+# ─── Documentation Build ─────────────────────────────────────
+site/
+docs/_build/
+docs/.doctrees/
+
+# ─── Misc ────────────────────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.env.vault

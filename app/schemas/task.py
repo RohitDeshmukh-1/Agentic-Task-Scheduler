@@ -19,6 +19,7 @@ class TaskCreate(BaseModel):
     scheduled_time: Optional[time] = None
     estimated_minutes: Optional[int] = Field(None, ge=1, le=480)
     goal_id: Optional[str] = None
+    recurring_task_id: Optional[str] = None
 
 
 class TaskUpdate(BaseModel):
@@ -31,6 +32,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     completion_notes: Optional[str] = None
     estimated_minutes: Optional[int] = Field(None, ge=1, le=480)
+    recurring_task_id: Optional[str] = None
 
 
 class TaskBulkUpdate(BaseModel):
@@ -42,6 +44,7 @@ class TaskRead(BaseModel):
     id: str
     user_id: str
     goal_id: Optional[str]
+    recurring_task_id: Optional[str]
     description: str
     category: TaskCategory
     difficulty: TaskDifficulty

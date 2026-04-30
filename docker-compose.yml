@@ -8,7 +8,7 @@ services:
     env_file:
       - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://taskpilot:taskpilot@db:5432/taskpilot
+      - DATABASE_URL=postgresql+asyncpg://taskpilot:your_strong_password@db:5432/taskpilot
       - APP_ENV=production
     depends_on:
       db:
@@ -19,7 +19,7 @@ services:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: taskpilot
-      POSTGRES_PASSWORD: taskpilot
+      POSTGRES_PASSWORD: your_strong_password
       POSTGRES_DB: taskpilot
     volumes:
       - pgdata:/var/lib/postgresql/data

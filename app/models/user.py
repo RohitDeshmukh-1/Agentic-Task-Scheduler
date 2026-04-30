@@ -42,6 +42,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     # ── Relationships ────────────────────────────────────────────────────
     goals = relationship("Goal", back_populates="user", cascade="all, delete-orphan")
     tasks = relationship("Task", back_populates="user", cascade="all, delete-orphan")
+    recurring_tasks = relationship(
+        "RecurringTask", back_populates="user", cascade="all, delete-orphan"
+    )
     daily_logs = relationship(
         "DailyLog", back_populates="user", cascade="all, delete-orphan"
     )

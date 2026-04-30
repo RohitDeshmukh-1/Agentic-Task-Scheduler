@@ -75,15 +75,21 @@ class MessageFormatter:
         return "\n".join(lines)
 
     @staticmethod
-    def task_confirmation(tasks: list[dict]) -> str:
+    def task_confirmation(tasks: list[dict], agent_response: Optional[str] = None) -> str:
         if not tasks:
-            return "Hmm, I couldn't extract any tasks. Could you try again?"
+            return agent_response or "Hmm, I couldn't extract any tasks. Could you try again?"
 
         lines = ["✅ *Tasks scheduled!*", ""]
         for i, t in enumerate(tasks, 1):
             date_str = t.get("scheduled_date", "today")
-            lines.append(f"{i}. {t['description']} — 📅 {date_str}")
-        lines.extend(["", "I'll remind you when it's time! 🔔"])
+            time_str = f" at ⏰ {t.get('scheduled_time')}" if t.get("scheduled_time") else ""
+            lines.append(f"{i}. {t['description']} — 📅 {date_str}{time_str}")
+        
+        if agent_response and agent_response != "Something went wrong. Please try again.":
+            lines.extend(["", agent_response])
+        else:
+            lines.extend(["", "I'll remind you when it's time! 🔔"])
+            
         return "\n".join(lines)
 
     @staticmethod

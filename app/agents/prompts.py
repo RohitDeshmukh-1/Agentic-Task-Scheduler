@@ -48,6 +48,8 @@ RULES:
 5. Assess priority: low, medium, high, urgent
 6. If user mentions a goal, include goal_title.
 7. If user says "plan my week" or similar, generate a full week of tasks.
+8. If the user mentions a time, always set scheduled_time in 24-hour HH:MM format.
+9. If no time is mentioned, set scheduled_time to null.
 
 User context:
 - Today: {today}

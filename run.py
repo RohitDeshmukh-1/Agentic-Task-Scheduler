@@ -21,16 +21,20 @@ console = Console()
 
 def run_server():
     """Start the FastAPI server."""
+    import os
     from app.config import get_settings
     settings = get_settings()
+
+    # Railway injects $PORT — use it if present, else fall back to settings
+    port = int(os.environ.get("PORT", settings.app_port))
 
     console.print(Panel(
         f"[bold green]🚀 {settings.app_name} v1.0.0[/bold green]\n"
         f"Environment: {settings.app_env}\n"
         f"Telegram Mode: {settings.telegram_mode}\n"
-        f"Database: {settings.database_url}\n"
-        f"Dashboard: http://localhost:{settings.app_port}/dashboard\n"
-        f"API Docs: http://localhost:{settings.app_port}/docs",
+        f"Database: {'postgresql' if 'postgresql' in settings.database_url else 'sqlite'}\n"
+        f"Port: {port}\n"
+        f"API Docs: http://localhost:{port}/docs",
         title="TaskPilot Server",
         border_style="cyan",
     ))
@@ -38,8 +42,8 @@ def run_server():
     uvicorn.run(
         "app.main:app",
         host=settings.app_host,
-        port=settings.app_port,
-        reload=settings.app_env == "development",
+        port=port,
+        reload=False,  # Never reload in production/container
         log_level=settings.log_level.lower(),
     )
 

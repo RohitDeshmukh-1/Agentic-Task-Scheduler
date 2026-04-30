@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_webhook_secret: str = "taskpilot_telegram_2026"
     telegram_mode: Literal["polling", "webhook"] = "webhook"
+    telegram_webhook_url: str = ""
+    public_base_url: str = ""
 
     # ── Application ──────────────────────────────────────────────────────
     app_name: str = "TaskPilot"
@@ -53,6 +55,7 @@ class Settings(BaseSettings):
     night_check_minute: int = 0
     weekly_report_day: str = "sun"
     weekly_report_hour: int = 10
+    recurrence_lookahead_days: int = 30
 
     # ── Dashboard ────────────────────────────────────────────────────────
     dashboard_enabled: bool = True

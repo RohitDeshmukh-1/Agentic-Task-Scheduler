@@ -34,16 +34,52 @@ Built with LangGraph • Llama 3.3 70B • FastAPI • APScheduler
 
 ## Architecture
 
+```mermaid
+flowchart LR
+  user([User]) --> tg[Telegram]
+  tg --> api[FastAPI Webhook / Polling]
+  api --> orch[OrchestrationService]
+  orch --> graph[LangGraph Pipeline]
+  graph --> router[Router Agent]
+  router --> planner[Planner Agent]
+  router --> tracker[Tracker Agent]
+  router --> goal[Goal Setter]
+  router --> query[Query Handler]
+  planner --> db[(Database)]
+  tracker --> db
+  goal --> db
+  query --> db
+  db --> orch
+  sched[APScheduler Jobs] --> orch
+  orch --> tg
 ```
-User → Telegram → Webhook → LangGraph Pipeline → Database
-                                  │
-                      ┌───────────┼───────────┐
-                      ▼           ▼           ▼
-                   Router → Planner/Tracker → Response
-                                  │
-                            APScheduler
-                     (Morning / Night / Weekly)
+
+## User Flow
+
+```mermaid
+sequenceDiagram
+  participant U as User
+  participant T as Telegram
+  participant A as API
+  participant O as OrchestrationService
+  participant G as LangGraph
+  participant D as Database
+
+  U->>T: "Remind me to go to the gym at 6pm except Sundays"
+  T->>A: Webhook/Update
+  A->>O: handle_incoming_message
+  O->>G: process_message
+  G->>O: intent + extracted tasks
+  O->>D: persist tasks / recurring rules
+  O->>T: confirmation + schedule
+  T->>U: "Tasks scheduled" message
 ```
+
+Flow summary:
+- User sends a natural-language request.
+- Intent is classified and tasks are extracted.
+- Tasks (and recurrence rules if any) are saved per user.
+- Scheduler jobs deliver reminders and check-ins.
 
 ---
 
@@ -95,6 +131,56 @@ curl -X POST https://api.telegram.org/botYOUR_BOT_TOKEN/setWebhook \
 
 curl https://api.telegram.org/botYOUR_BOT_TOKEN/getWebhookInfo
 ```
+
+---
+
+## Railway Deployment
+
+This repo already includes Railway config via Dockerfile + [railway.toml](railway.toml).
+
+### 1) Create a Railway project
+
+- New Project → Deploy from GitHub
+- Select this repository
+
+### 2) Add a Postgres database
+
+- Add → Database → PostgreSQL
+- Copy the database URL into `DATABASE_URL`
+
+### 3) Set environment variables
+
+Minimum required:
+
+```env
+APP_ENV=production
+APP_SECRET_KEY=change-me-to-random-secret
+
+LLM_API_KEY=your_key
+LLM_MODEL=llama-3.3-70b-versatile
+
+TELEGRAM_BOT_TOKEN=your_token
+TELEGRAM_MODE=webhook
+TELEGRAM_WEBHOOK_SECRET=taskpilot_telegram_2026
+
+DATABASE_URL=postgresql+asyncpg://user:password@host:5432/taskpilot
+```
+
+Webhook URL options (pick one):
+
+- `TELEGRAM_WEBHOOK_URL=https://your-domain.com/api/v1/webhook/telegram`
+- `PUBLIC_BASE_URL=https://your-domain.com`
+- Or leave both empty and Railway will use `RAILWAY_PUBLIC_DOMAIN` automatically.
+
+### 4) Deploy
+
+Railway will build the Dockerfile and run:
+
+```bash
+python run.py server
+```
+
+On startup, the app will auto-configure Telegram webhook if `TELEGRAM_MODE=webhook` and a public URL is available.
 
 ---
 

@@ -55,6 +55,9 @@ class Task(UUIDMixin, TimestampMixin, Base):
     goal_id: Mapped[Optional[str]] = mapped_column(
         ForeignKey("goals.id", ondelete="SET NULL"), nullable=True
     )
+    recurring_task_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("recurring_tasks.id", ondelete="SET NULL"), nullable=True
+    )
     description: Mapped[str] = mapped_column(Text, nullable=False)
     category: Mapped[TaskCategory] = mapped_column(
         Enum(TaskCategory), default=TaskCategory.OTHER
@@ -84,6 +87,7 @@ class Task(UUIDMixin, TimestampMixin, Base):
     # ── Relationships ────────────────────────────────────────────────────
     user = relationship("User", back_populates="tasks")
     goal = relationship("Goal", back_populates="tasks")
+    recurring_task = relationship("RecurringTask")
 
     def __repr__(self) -> str:
         return f"<Task '{self.description[:30]}' date={self.scheduled_date} status={self.status.value}>"

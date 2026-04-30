@@ -222,6 +222,39 @@ class TelegramService:
             logger.error("telegram_polling_exception", error=str(e))
             return []
 
+    async def set_webhook(
+        self,
+        url: str,
+        secret_token: Optional[str] = None,
+        drop_pending_updates: bool = False,
+    ) -> bool:
+        """Configure Telegram webhook for this bot."""
+        if not self.bot_token:
+            logger.warning("telegram_not_configured")
+            return False
+
+        payload = {
+            "url": url,
+            "drop_pending_updates": drop_pending_updates,
+        }
+        if secret_token:
+            payload["secret_token"] = secret_token
+
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                resp = await client.post(
+                    f"{self.api_base}{self.bot_token}/setWebhook",
+                    json=payload,
+                    headers=self._get_headers(),
+                )
+                if resp.status_code == 200:
+                    return True
+                logger.error("telegram_webhook_error", status=resp.status_code, body=resp.text)
+                return False
+        except Exception as e:
+            logger.error("telegram_webhook_exception", error=str(e))
+            return False
+
     def verify_webhook_signature(self, request_body: str, secret: str) -> bool:
         """
         Verify webhook signature (optional layer for security).

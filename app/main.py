@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 import asyncio
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,6 +17,7 @@ from app.config import get_settings
 from app.core.database import close_db, init_db
 from app.core.logging import get_logger, setup_logging
 from app.services.scheduler import setup_scheduler, shutdown_scheduler
+from app.services.telegram import get_telegram_service
 
 settings = get_settings()
 
@@ -59,6 +61,36 @@ async def polling_task():
         await asyncio.sleep(1)
 
 
+async def configure_telegram_webhook(logger) -> None:
+    """Best-effort webhook setup for production deployments."""
+    if settings.telegram_mode != "webhook":
+        return
+    if not settings.telegram_bot_token:
+        logger.warning("telegram_bot_token_missing")
+        return
+
+    webhook_url = settings.telegram_webhook_url.strip()
+    if not webhook_url:
+        base_url = settings.public_base_url.strip()
+        if not base_url:
+            railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+            if railway_domain:
+                base_url = f"https://{railway_domain}"
+        if base_url:
+            webhook_url = f"{base_url.rstrip('/')}/api/v1/webhook/telegram"
+
+    if not webhook_url:
+        logger.warning("telegram_webhook_url_missing")
+        return
+
+    telegram = get_telegram_service()
+    ok = await telegram.set_webhook(webhook_url, settings.telegram_webhook_secret)
+    if ok:
+        logger.info("telegram_webhook_configured", url=webhook_url)
+    else:
+        logger.error("telegram_webhook_config_failed", url=webhook_url)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup and shutdown lifecycle."""
@@ -73,6 +105,8 @@ async def lifespan(app: FastAPI):
     # Start background scheduler
     setup_scheduler()
     logger.info("scheduler_ready")
+
+    await configure_telegram_webhook(logger)
 
     polling_job = None
     if settings.telegram_mode == "polling":

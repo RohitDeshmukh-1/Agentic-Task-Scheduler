@@ -12,8 +12,12 @@ from app.config import get_settings
 from app.core.database import async_session_factory
 from app.core.logging import get_logger
 from app.crud.daily_log import DailyLogCRUD
+from app.crud.recurring_task import RecurringTaskCRUD
 from app.crud.task import TaskCRUD
 from app.crud.user import UserCRUD
+from app.models.recurring_task import RecurrenceFrequency
+from app.models.task import TaskCategory, TaskDifficulty, TaskPriority
+from app.schemas.task import TaskCreate
 from app.services.message_formatter import MessageFormatter
 from app.services.telegram import get_telegram_service
 
@@ -22,6 +26,8 @@ settings = get_settings()
 formatter = MessageFormatter()
 
 scheduler = AsyncIOScheduler()
+
+_DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 
 
 async def morning_reminder_job():
@@ -171,6 +177,106 @@ async def auto_reschedule_job():
     logger.info("job_completed", job="auto_reschedule")
 
 
+def _generate_recurrence_dates(
+    start_date: date,
+    end_date: date,
+    frequency: RecurrenceFrequency,
+    days_of_week: list[str] | None,
+    except_days: list[str],
+) -> list[date]:
+    dates: list[date] = []
+    current = start_date
+    day_index = {day: i for i, day in enumerate(_DAY_ORDER)}
+
+    allowed_days = None
+    if days_of_week:
+        allowed_days = {day_index[d] for d in days_of_week if d in day_index}
+    if frequency == RecurrenceFrequency.WEEKLY and allowed_days is not None and not allowed_days:
+        return []
+
+    excluded_days = {day_index[d] for d in except_days if d in day_index}
+
+    while current <= end_date:
+        weekday = current.weekday()
+        if weekday in excluded_days:
+            current += timedelta(days=1)
+            continue
+
+        if frequency == RecurrenceFrequency.DAILY:
+            dates.append(current)
+        elif frequency == RecurrenceFrequency.WEEKLY:
+            if allowed_days is None or weekday in allowed_days:
+                dates.append(current)
+
+        current += timedelta(days=1)
+
+    return dates
+
+
+async def recurring_task_job():
+    """Materialize upcoming tasks for recurring rules."""
+    logger.info("job_started", job="recurring_tasks")
+
+    async with async_session_factory() as db:
+        recurrences = await RecurringTaskCRUD.list_active(db)
+        today = date.today()
+        lookahead = settings.recurrence_lookahead_days
+
+        for rule in recurrences:
+            start = max(rule.start_date, today)
+            if rule.last_generated_date and rule.last_generated_date >= start:
+                start = rule.last_generated_date + timedelta(days=1)
+
+            end = today + timedelta(days=lookahead - 1)
+            if rule.end_date and rule.end_date < end:
+                end = rule.end_date
+
+            if start > end:
+                continue
+
+            days_of_week = rule.days_of_week.split(",") if rule.days_of_week else None
+            except_days = rule.except_days.split(",") if rule.except_days else []
+            dates = _generate_recurrence_dates(
+                start,
+                end,
+                rule.frequency,
+                days_of_week,
+                except_days,
+            )
+
+            if not dates:
+                await RecurringTaskCRUD.update_last_generated(db, rule.id, end)
+                continue
+
+            existing = await TaskCRUD.get_recurring_dates_in_range(db, rule.id, start, end)
+
+            creates = []
+            for task_date in dates:
+                if task_date in existing:
+                    continue
+                creates.append(
+                    TaskCreate(
+                        description=rule.description,
+                        category=TaskCategory(rule.category),
+                        difficulty=TaskDifficulty(rule.difficulty),
+                        priority=TaskPriority(rule.priority),
+                        scheduled_date=task_date,
+                        scheduled_time=rule.scheduled_time,
+                        estimated_minutes=None,
+                        goal_id=None,
+                        recurring_task_id=rule.id,
+                    )
+                )
+
+            if creates:
+                await TaskCRUD.create_many(db, rule.user_id, creates)
+
+            await RecurringTaskCRUD.update_last_generated(db, rule.id, end)
+
+        await db.commit()
+    logger.info("job_completed", job="recurring_tasks")
+
+
 # ─── Day mapping ─────────────────────────────────────────────────────────────
 DAY_MAP = {"mon": "mon", "tue": "tue", "wed": "wed", "thu": "thu", "fri": "fri", "sat": "sat", "sun": "sun"}
 
@@ -214,6 +320,16 @@ def setup_scheduler():
         hour=7,
         minute=30,
         id="auto_reschedule",
+        replace_existing=True,
+    )
+
+    # Recurring task materialization (runs daily)
+    scheduler.add_job(
+        recurring_task_job,
+        "cron",
+        hour=1,
+        minute=15,
+        id="recurring_tasks",
         replace_existing=True,
     )
 
